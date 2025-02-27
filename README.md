@@ -1,12 +1,7 @@
 # RPLidar [![Documentation](https://readthedocs.org/projects/rplidar/badge/?version=latest)](http://rplidar.readthedocs.org/en/latest/?badge=latest) [![PyPI](https://img.shields.io/pypi/v/rplidar.svg)](https://pypi.python.org/pypi/rplidar) [![MIT License](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/SkRobo/rplidar/blob/master/LICENSE)
 
-Simple and lightweight Python module for working with RPLidar rangefinder scanners.
 
-This module aims to implement communication protocol with RPLidar rangefinder
-scaners. It's Python 2 and 3 compatible, but was mainly tested using Python 3.
 
-For protocol specifications please refer to the slamtec
-[document](http://www.slamtec.com/download/lidar/documents/en-us/rplidar_interface_protocol_en.pdf).
 
 ## Installing
 
