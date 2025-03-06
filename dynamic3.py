@@ -60,7 +60,7 @@ class IMUFilter:
 
         return self.tilt_angle, self.yaw_angle
 
-# Create a global IMU filter instance with default parameters.
+# Create a global IMU filter instance with default parameters
 imu_filter = IMUFilter(alpha=0.98, yaw_threshold=0.5, yaw_filter_alpha=0.1)
 
 # -------------------------------
