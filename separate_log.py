@@ -8,10 +8,11 @@ LIDAR_PORT = '/dev/ttyUSB0'
 IMU_PORT = '/dev/ttyACM0'
 IMU_BAUDRATE = 9600
 
-
+# Output file names
 LIDAR_FILE = "lidar_data.txt"
 IMU_FILE = "imu_data.txt"
 
+# Initialize LiDAR and IMU
 lidar = RPLidar(LIDAR_PORT)
 imu_serial = serial.Serial(IMU_PORT, IMU_BAUDRATE, timeout=1)
 
@@ -21,14 +22,14 @@ def lidar_logging():
     Each measurement is written with a timestamp, quality, angle, and distance.
     """
     with open(LIDAR_FILE, "w") as f:
-
+        # Optionally, write a header
         f.write("timestamp,quality,angle,distance\n")
         try:
             for scan in lidar.iter_scans():
-                timestamp = time.time()  
+                timestamp = time.time()  # Current time in seconds (float)
                 for measurement in scan:
                     quality, angle, distance = measurement
-
+                    # Write a CSV-formatted line
                     f.write(f"{timestamp},{quality},{angle},{distance}\n")
                 f.flush()
         except Exception as e:
@@ -40,12 +41,13 @@ def imu_logging():
     Each line read from the IMU (e.g., "GY: <value>") is prepended with a timestamp.
     """
     with open(IMU_FILE, "w") as f:
-
+        # Optionally, write a header
         f.write("timestamp,imu_data\n")
         try:
             while True:
-                line = imu_serial.readline().decode("utf-8").strip()
-                if line:  
+                # Decode using 'replace' to handle decoding errors gracefully
+                line = imu_serial.readline().decode("utf-8", errors="replace").strip()
+                if line:  # Only process non-empty lines
                     timestamp = time.time()
                     f.write(f"{timestamp},{line}\n")
                     f.flush()
@@ -55,13 +57,13 @@ def imu_logging():
 def main():
     try:
         print("Starting data logging from LiDAR and IMU...")
-
+        # Start separate threads for LiDAR and IMU logging
         lidar_thread = threading.Thread(target=lidar_logging, daemon=True)
         imu_thread = threading.Thread(target=imu_logging, daemon=True)
         lidar_thread.start()
         imu_thread.start()
 
-
+        # Keep the main thread alive while data is being logged.
         while True:
             time.sleep(1)
 
@@ -69,7 +71,7 @@ def main():
         print("KeyboardInterrupt received. Stopping data logging...")
 
     finally:
- 
+        # Safely stop and disconnect sensors
         lidar.stop()
         lidar.disconnect()
         imu_serial.close()
