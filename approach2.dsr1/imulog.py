@@ -7,26 +7,35 @@ BAUD_RATE = 9600
 
 def run(output_file):
     ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
-    time.sleep(2)  # Give time for Arduino to reset and start sending data
+    time.sleep(2)  # Allow time for Arduino to reset and start sending data
     with open(output_file, 'w') as outfile:
         print("Recording IMU data... Press Ctrl+C to stop.")
         try:
             while True:
-                line = ser.readline().decode('utf-8').strip()
-                if line:
-                    # Example expected format: "gx: 131, gy: 65" (raw values)
-                    try:
-                        parts = line.split(',')
-                        gx_raw = float(parts[0].split(':')[1])
-                        gy_raw = float(parts[1].split(':')[1])
-                        # Convert raw values to degrees per second (or another unit) by dividing by sensitivity factor
-                        gx = gx_raw / 131.0
-                        gy = gy_raw / 131.0
-                        timestamp = time.time()
-                        # Write the timestamp and the computed values
-                        outfile.write(f"{timestamp}\t{gx}\t{gy}\n")
-                    except Exception as e:
-                        print("Could not parse line:", line, "Error:", e)
+                try:
+                    # Decode with errors='ignore' to bypass any decoding issues
+                    line = ser.readline().decode('utf-8', errors='ignore').strip()
+                except Exception as decode_err:
+                    print("Decoding error:", decode_err)
+                    continue
+
+                if not line:
+                    continue
+
+                # Expected format: "timestamp,PX:<pitchAngle>,PY:<rollAngle>,PZ:<yawAngle>"
+                parts = line.split(',')
+                if len(parts) < 4:
+                    print("Could not parse line:", line, "Error: insufficient parts")
+                    continue
+                try:
+                    timestamp = float(parts[0])
+                    pitch = float(parts[1].split(':')[1])
+                    roll = float(parts[2].split(':')[1])
+                    yaw = float(parts[3].split(':')[1])
+                    # Write timestamp (ms) and angles separated by tabs
+                    outfile.write(f"{timestamp}\t{pitch}\t{roll}\t{yaw}\n")
+                except Exception as e:
+                    print("Could not parse line:", line, "Error:", e)
         except KeyboardInterrupt:
             print("Stopping IMU recording.")
     ser.close()

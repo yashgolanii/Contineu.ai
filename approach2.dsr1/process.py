@@ -2,22 +2,40 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
-# Load lidar data
-# Expected columns: timestamp, quality, angle (in degrees), distance
+# --- Load Lidar Data ---
+# Expected columns: timestamp, quality, angle, distance (tab-separated)
 lidar_cols = ['timestamp', 'quality', 'angle', 'distance']
 lidar_data = pd.read_csv('lidar_data.txt', sep='\t', header=None, names=lidar_cols)
 
-# Load IMU data
-# Expected columns: timestamp, pitch (from gx), roll (from gy)
-imu_cols = ['timestamp', 'pitch', 'roll']
-imu_data = pd.read_csv('imu_data.txt', sep='\t', header=None, names=imu_cols)
+# --- Load IMU Data ---
+# Expected format per line: <timestamp>,PX:<pitchAngle>,PY:<rollAngle>,PZ:<yawAngle>
+imu_rows = []
+with open('imu_data.txt', 'r') as f:
+    for line in f:
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split(',')
+        # First part is timestamp in ms; convert to seconds.
+        timestamp = float(parts[0]) / 1000.0
+        pitch = float(parts[1].split(':')[1])
+        roll = float(parts[2].split(':')[1])
+        yaw = float(parts[3].split(':')[1])
+        imu_rows.append([timestamp, pitch, roll, yaw])
+imu_data = pd.DataFrame(imu_rows, columns=['timestamp', 'pitch', 'roll', 'yaw'])
 
-# Function to get the nearest IMU record for a given timestamp
+# --- Align Timestamps ---
+# For best results, both logging sessions should start at the same time.
+# Here, we normalize both files to start at time zero.
+lidar_data['timestamp'] -= lidar_data['timestamp'].iloc[0]
+imu_data['timestamp'] -= imu_data['timestamp'].iloc[0]
+
+# --- Synchronize Data ---
+# For each lidar measurement, find the nearest IMU reading by timestamp.
 def get_nearest_imu(ts, imu_df):
     diff = abs(imu_df['timestamp'] - ts)
     return imu_df.iloc[diff.idxmin()]
 
-# For each lidar measurement, add the corresponding pitch and roll
 pitch_list = []
 roll_list = []
 for ts in lidar_data['timestamp']:
@@ -27,32 +45,39 @@ for ts in lidar_data['timestamp']:
 lidar_data['pitch'] = pitch_list
 lidar_data['roll'] = roll_list
 
-# Convert lidar polar coordinates to Cartesian in the lidar frame
-theta = np.deg2rad(lidar_data['angle'].values)  # convert angle to radians
+# --- Convert Lidar 2D Data to Cartesian Coordinates ---
+# Polar-to-Cartesian conversion (in the lidar’s own 2D plane)
+theta = np.deg2rad(lidar_data['angle'].values)  # Convert angle from degrees to radians
 r = lidar_data['distance'].values
 x_lidar = r * np.cos(theta)
 y_lidar = r * np.sin(theta)
-z_lidar = np.zeros_like(x_lidar)
+z_lidar = np.zeros_like(x_lidar)  # Initially, all points lie on a 2D plane (z=0)
 
-# Compute rotated coordinates using the IMU pitch and roll.
+# --- Transform 2D Points into 3D Using IMU Data ---
+# Apply rotations based on the IMU's pitch (rotation about X) and roll (rotation about Y).
 points = []
-for xi, yi, zi, pitch_angle, roll_angle in zip(x_lidar, y_lidar, z_lidar,
-                                                 lidar_data['pitch'].values,
+for xi, yi, zi, pitch_angle, roll_angle in zip(x_lidar, y_lidar, z_lidar, 
+                                                 lidar_data['pitch'].values, 
                                                  lidar_data['roll'].values):
-    # Create rotation matrices (angles assumed in radians; if your IMU data is in degrees, convert them)
-    R_x = np.array([[1, 0, 0],
-                    [0, np.cos(pitch_angle), -np.sin(pitch_angle)],
-                    [0, np.sin(pitch_angle),  np.cos(pitch_angle)]])
-    R_y = np.array([[np.cos(roll_angle), 0, np.sin(roll_angle)],
-                    [0, 1, 0],
-                    [-np.sin(roll_angle), 0, np.cos(roll_angle)]])
-    # Combined rotation: apply pitch then roll
-    R = R_y.dot(R_x)
-    point = R.dot(np.array([xi, yi, zi]))
+    # Convert pitch and roll from degrees to radians.
+    pitch_rad = np.deg2rad(pitch_angle)
+    roll_rad = np.deg2rad(roll_angle)
+    
+    # Rotation matrix for pitch (rotation about X axis)
+    R_pitch = np.array([[1, 0, 0],
+                        [0, np.cos(pitch_rad), -np.sin(pitch_rad)],
+                        [0, np.sin(pitch_rad), np.cos(pitch_rad)]])
+    # Rotation matrix for roll (rotation about Y axis)
+    R_roll = np.array([[np.cos(roll_rad), 0, np.sin(roll_rad)],
+                       [0, 1, 0],
+                       [-np.sin(roll_rad), 0, np.cos(roll_rad)]])
+    # Combined rotation: here we apply pitch first, then roll.
+    R = R_roll @ R_pitch
+    point = R @ np.array([xi, yi, zi])
     points.append(point)
 points = np.array(points)
 
-# Create an interactive 3D scatter plot using Plotly
+# --- Visualize the 3D Point Cloud ---
 fig = go.Figure(data=[go.Scatter3d(
     x=points[:, 0],
     y=points[:, 1],
