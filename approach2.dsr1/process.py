@@ -84,19 +84,22 @@ def process_data(lidar, imu):
         rotated = np.dot(Ry, np.dot(Rx, [x, y, z]))
         points.append(rotated)
     
-    return np.array(points)
+    return np.array(points)  # Convert to NumPy array
 
 # Main processing
-lidar_data, imu_data = load_data('lidar.txt', 'imu.txt')
+lidar_data, imu_data = load_data('lidar_data.txt', 'imu_data.txt')
 point_cloud = process_data(lidar_data, imu_data)
 
 # Visualization
-fig = go.Figure(data=[go.Scatter3d(
-    x=point_cloud[:,0],
-    y=point_cloud[:,1],
-    z=point_cloud[:,2],
-    mode='markers',
-    marker=dict(size=1, opacity=0.5)
-)])
-fig.update_layout(scene=dict(aspectmode='data'))
-fig.show()
+if len(point_cloud) > 0:  # Ensure point cloud is not empty
+    fig = go.Figure(data=[go.Scatter3d(
+        x=point_cloud[:, 0],  # Now works because point_cloud is a NumPy array
+        y=point_cloud[:, 1],
+        z=point_cloud[:, 2],
+        mode='markers',
+        marker=dict(size=1, opacity=0.5)
+    )])
+    fig.update_layout(scene=dict(aspectmode='data'))
+    fig.show()
+else:
+    print("No point cloud data to visualize.")

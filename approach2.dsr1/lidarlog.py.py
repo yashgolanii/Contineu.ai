@@ -1,28 +1,25 @@
 #!/usr/bin/env python3
-'''Records measurments to a given file. Usage example:
-
-$ ./record_measurments.py out.txt'''
 import sys
+import time
 from rplidar import RPLidar
-
 
 PORT_NAME = '/dev/ttyUSB0'
 
-
-def run(path):
-    '''Main function'''
+def run(output_file):
     lidar = RPLidar(PORT_NAME)
-    outfile = open(path, 'w')
-    try:
-        print('Recording measurments... Press Crl+C to stop.')
-        for measurment in lidar.iter_measures():
-            line = '\t'.join(str(v) for v in measurment)
-            outfile.write(line + '\n')
-    except KeyboardInterrupt:
-        print('Stoping.')
+    with open(output_file, 'w') as outfile:
+        try:
+            print("Recording lidar measurements... Press Ctrl+C to stop.")
+            for measurement in lidar.iter_measures():
+                # Prepend a timestamp (seconds since epoch)
+                timestamp = time.time()
+                # measurement is usually [quality, angle, distance] (check your documentation)
+                line = f"{timestamp}\t" + "\t".join(str(v) for v in measurement)
+                outfile.write(line + "\n")
+        except KeyboardInterrupt:
+            print("Stopping lidar recording.")
     lidar.stop()
     lidar.disconnect()
-    outfile.close()
 
 if __name__ == '__main__':
     run(sys.argv[1])
