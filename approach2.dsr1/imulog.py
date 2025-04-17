@@ -41,4 +41,4 @@ def run(output_file):
     ser.close()
 
 if __name__ == '__main__':
-    run('imu_data.txt')
+    run('imu_data.2txt')
