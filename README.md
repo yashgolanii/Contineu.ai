@@ -3,7 +3,7 @@
 
 
 
-## Installin
+## Installing
 
 You can install rplidar using `pip`:
 
