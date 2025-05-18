@@ -129,23 +129,29 @@ def parse_and_fuse_imu(imu_file, alpha=ALPHA, gyro_scale=GYRO_SCALE):
 
 def parse_lidar_data(lidar_file):
     """
-    Reads lines in the form: timestamp,quality,angle,distance
-    Returns a list of (timestamp, angle_deg, distance_mm).
+    Parses LiDAR data in the form:
+    timestamp<TAB>invalid<TAB>quality<TAB>angle<TAB>distance
+
+    Returns a list of (timestamp, angle_deg, distance_mm) tuples,
+    filtering out invalid flags and zero distances.
     """
     records = []
     with open(lidar_file, 'r') as f:
         header = f.readline()  # Skip header
         for line in f:
-            parts = line.strip().split(',')
-            if len(parts) < 4:
+            parts = line.strip().split('\t')
+            if len(parts) < 5:
                 continue
             try:
                 ts       = float(parts[0])
-                angle    = float(parts[2])
-                distance = float(parts[3])
-                records.append((ts, angle, distance))
+                invalid  = parts[1].strip().lower() == 'true'
+                angle    = float(parts[3])
+                distance = float(parts[4])
+
+                if not invalid and distance > 0:
+                    records.append((ts, angle, distance))
             except ValueError:
-                pass
+                continue
     return records
 
 #############################
