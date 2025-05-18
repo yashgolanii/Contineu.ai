@@ -44,4 +44,4 @@ lidar.disconnect()
 ```
 
 In addition to it you can view example applications inside
-[examples](https://github.com/SkRobo/rplidar/tree/master/examples>) director
+[examples](https://github.com/SkRobo/rplidar/tree/master/examples>) directory.
