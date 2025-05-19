@@ -25,8 +25,8 @@ LIDAR_FILE = os.path.join(LOCAL_DIR, lidar_filename)
 
 # Fetch files using rclone
 print(f"[Download] Copying from {REMOTE_PATH}/ ...")
-result_imu = subprocess.run(["rclone", "copyto", f"{REMOTE_PATH}/{imu_filename}", IMU_FILE])
-result_lidar = subprocess.run(["rclone", "copyto", f"{REMOTE_PATH}/{lidar_filename}", LIDAR_FILE])
+result_imu = subprocess.run(["rclone", "copy", f"{REMOTE_PATH}/{imu_filename}", IMU_FILE])
+result_lidar = subprocess.run(["rclone", "copy", f"{REMOTE_PATH}/{lidar_filename}", LIDAR_FILE])
 
 # Check for failures
 if result_imu.returncode != 0 or result_lidar.returncode != 0:
