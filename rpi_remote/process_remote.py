@@ -36,9 +36,7 @@ if result_imu.returncode != 0 or result_lidar.returncode != 0:
 print("[Download] Files downloaded successfully.")
 
 
-# Step 6: Set for processing
-LIDAR_FILE = lidar_local
-IMU_FILE = imu_local
+
 
 
 
