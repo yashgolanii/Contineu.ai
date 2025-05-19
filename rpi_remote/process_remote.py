@@ -15,7 +15,7 @@ lidar_filename = input("Enter LiDAR data filename (e.g., lidar_data.txt): ").str
 
 # Drive config
 RCLONE_REMOTE = "contineudrive"
-REMOTE_PATH = f"raspi_logs/{folder_subpath}"
+REMOTE_PATH = f"{RCLONE_REMOTE}:raspi_logs/{folder_subpath}"
 LOCAL_DIR = "./downloaded_data"
 os.makedirs(LOCAL_DIR, exist_ok=True)
 
